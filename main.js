@@ -52,8 +52,8 @@ function main() {
     program = initShaders(gl, "vshader", "fshader");
     gl.useProgram(program);
 
-
-
+    gl.enable(gl.CULL_FACE);
+    gl.cullFace(gl.BACK);
 
     //buffer creations and vertex array initialization
     vBuffer = gl.createBuffer();
@@ -79,7 +79,7 @@ function main() {
     let up = vec3(0.0, 1.0, 0.0);
 
 
-    let eye = vec3(0, 3, Z_DISTANCE);
+    let eye = vec3(0, 0, Z_DISTANCE);
     let modelViewMatrix = lookAt(eye, at, up);
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
@@ -133,10 +133,13 @@ function render(){
     gl.bindBuffer(gl.ARRAY_BUFFER, vNormal);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(faceNormals), gl.STATIC_DRAW);
 
-
+    console.log(currMaterial);
     let diffuseProduct = mult(lightDiffuse, diffuseMap.get(currMaterial));
     let specularProduct = mult(lightSpecular, specularMap.get(currMaterial));
     let ambientProduct = lightAmbient;
+    let transMatrix = translate(0,0,0);
+
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "transMatrix"), false, flatten(transMatrix));
 
     //set uniform material properties 
     gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
@@ -145,6 +148,6 @@ function render(){
     gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
     gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
 
-    
+
     gl.drawArrays(gl.TRIANGLES, 0, faceVertices.length);
 }

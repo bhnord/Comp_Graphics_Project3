@@ -15,7 +15,7 @@ let textureURL = null;      // URL of texture file to use
 // Mapping of material name to diffuse / specular colors
 let diffuseMap = new Map();
 let specularMap = new Map();
-
+let done = 0;
 
 /**
  * Loads a text file into the local program from a URL.
@@ -27,7 +27,7 @@ function loadFiles(fileURL) {
 
     // Asynchronously load file
     let objReq = new XMLHttpRequest();
-    objReq.open('GET', fileURL+".mtl");
+    objReq.open('GET', fileURL + ".mtl");
 
 
     //get OBJ file
@@ -35,18 +35,20 @@ function loadFiles(fileURL) {
         if (objReq.readyState === 4 && objReq.status === 200) {
             let objFile = objReq.responseText;
             parseMtlFile(objFile);
+
+            //get MTL file
+            let objReq2 = new XMLHttpRequest();
+            objReq2.open('GET', fileURL + ".obj");
+            objReq2.onreadystatechange = function () {
+                if (objReq2.readyState === 4 && objReq.status === 200) {
+                    let objFile2 = objReq2.responseText;
+                    parseObjFile(objFile2);
+                }
+            }
+            objReq2.send(null);
         }
 
-        //get MTL file
-        let objReq2 = new XMLHttpRequest();
-        objReq2.open('GET', fileURL + ".obj");
-        objReq2.onreadystatechange = function () {
-            if (objReq2.readyState === 4 && objReq.status === 200) {
-                let objFile2 = objReq2.responseText;
-                parseObjFile(objFile2);
-            }
-        }
-        objReq2.send(null);
+
     }
     objReq.send(null);
 
@@ -108,7 +110,7 @@ function parseObjFile(objFile) {
 
     }
 
-    
+
 
     render();
 }
