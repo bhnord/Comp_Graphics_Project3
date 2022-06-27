@@ -4,21 +4,49 @@
         <meta charset="UTF-8">
         <title>CS 4731 Final Project</title>
         <script id="vshader" type="x-shader/x-vertex">
-            void main() {}
+            attribute vec4 vPosition; 
+            attribute vec4 vNormal;
+            uniform mat4 projectionMatrix; 
+            uniform mat4 modelViewMatrix;
+
+
+            uniform vec4 lightPosition; 
+            uniform mat4 transMatrix;
+            void main() {
+                gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+            }
         </script>
 
         <script id="fshader" type="x-shader/x-fragment">
-            void main() {}
+            precision mediump float; 
+
+
+            varying vec3 L, N, V; 
+            uniform vec4 ambientProduct, diffuseProduct, specularProduct; 
+            uniform float shininess; 
+
+            void main() {
+                //vec3 R = (2.0 * dot(L, N) * N) - L; 
+                //vec4 diffuse = diffuseProduct * dot(L, N); 
+                //vec4 ambient = ambientProduct; 
+                //vec4 specular = specularProduct * pow(max(dot(V, R), 0.0), shininess); 
+                //vec4 fColor = diffuse + specular + ambient; 
+
+                //fColor.a = 1.0; 
+                
+                //gl_FragColor = fColor; 
+                gl_FragColor = vec4(0,0,0,1);
+            }
         </script>
 
         <script type="text/javascript" src="lib/webgl-utils.js"></script>
         <script type="text/javascript" src="lib/initShaders.js"></script>
         <script type="text/javascript" src="lib/MV.js"></script>
 
- 
+        <script type="text/javascript" src="main.js"></script>
         <script type="text/javascript" src="parser.js"></script>
 
-        <script type="text/javascript" src="main.js"></script>
+ 
 
     </head>
 

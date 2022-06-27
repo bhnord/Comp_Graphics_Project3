@@ -23,29 +23,34 @@ let specularMap = new Map();
  * @param fileURL The URL of the file to load.
  * @param fileType The type (OBJ or MTL) of the file being loaded.
  */
-function loadFile(fileURL, fileType) {
+function loadFiles(fileURL) {
 
     // Asynchronously load file
     let objReq = new XMLHttpRequest();
-    objReq.open('GET', fileURL);
-    objReq.onreadystatechange = function() {
+    objReq.open('GET', fileURL+".mtl");
+
+
+    //get OBJ file
+    objReq.onreadystatechange = function () {
         if (objReq.readyState === 4 && objReq.status === 200) {
             let objFile = objReq.responseText;
-
-            switch(fileType.toUpperCase()) {
-                case "OBJ":
-                    parseObjFile(objFile);
-                    break;
-                case "MTL":
-                    parseMtlFile(objFile);
-                    break;
-                default:
-                    break;
-            }
-
+            parseMtlFile(objFile);
         }
+
+        //get MTL file
+        let objReq2 = new XMLHttpRequest();
+        objReq2.open('GET', fileURL + ".obj");
+        objReq2.onreadystatechange = function () {
+            if (objReq2.readyState === 4 && objReq.status === 200) {
+                let objFile2 = objReq2.responseText;
+                parseObjFile(objFile2);
+            }
+        }
+        objReq2.send(null);
     }
     objReq.send(null);
+
+
 }
 
 /**
@@ -56,7 +61,7 @@ function loadFile(fileURL, fileType) {
  */
 function parseObjFile(objFile) {
 
-     // Split and sanitize OBJ file input
+    // Split and sanitize OBJ file input
     let objLines = objFile.split('\n');
     objLines = objLines.filter(line => {
         return (line.search(/\S/) !== -1);
@@ -65,6 +70,8 @@ function parseObjFile(objFile) {
         return line.trim();
     });
 
+
+    //TODO: On each material change (currMaterial), and at end of file, render according to material that is in currMaterial.
     for (let currLine = 0; currLine < objLines.length; currLine++) {
 
         let line = objLines[currLine];
@@ -89,7 +96,7 @@ function parseObjFile(objFile) {
         }
 
         // Triangulate convex polygon using fan triangulation
-        for(let i = 1; i < faceVerts.length - 1; i++) {
+        for (let i = 1; i < faceVerts.length - 1; i++) {
             faceVertices.push(faceVerts[0], faceVerts[i], faceVerts[i + 1]);
             faceNormals.push(faceNorms[0], faceNorms[i], faceNorms[i + 1]);
             faceUVs.push(faceTexs[0], faceTexs[i], faceTexs[i + 1]);
@@ -97,11 +104,13 @@ function parseObjFile(objFile) {
 
         faceVerts = []; // Indices into vertices array for this face
         faceNorms = []; // Indices into normal array for this face
-        faceTexs  = []; // Indices into UVs array for this face
+        faceTexs = []; // Indices into UVs array for this face
 
-
-        //TODO: Pass data into vertex buff and render
     }
+
+    
+
+    render();
 }
 
 
