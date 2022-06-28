@@ -15,20 +15,25 @@ let textureURL = null;      // URL of texture file to use
 // Mapping of material name to diffuse / specular colors
 let diffuseMap = new Map();
 let specularMap = new Map();
-let done = 0;
+let currFile = null;
 
+let car = [];
+let lamp = [];
+let street = [];
+let bunny = [];
+//save verticies in tuples with verts, mat key
 /**
  * Loads a text file into the local program from a URL.
  *
  * @param fileURL The URL of the file to load.
  * @param fileType The type (OBJ or MTL) of the file being loaded.
  */
-function loadFiles(fileURL) {
-
+function loadFiles(base_url, fileName) {
+    let fileURL = base_url + fileName;
     // Asynchronously load file
     let objReq = new XMLHttpRequest();
     objReq.open('GET', fileURL + ".mtl");
-
+    console.log(fileName);
 
     //get OBJ file
     objReq.onreadystatechange = function () {
@@ -42,6 +47,7 @@ function loadFiles(fileURL) {
             objReq2.onreadystatechange = function () {
                 if (objReq2.readyState === 4 && objReq.status === 200) {
                     let objFile2 = objReq2.responseText;
+                    currFile = fileName;
                     parseObjFile(objFile2);
                 }
             }
@@ -54,6 +60,28 @@ function loadFiles(fileURL) {
 
 
 }
+
+
+
+
+
+function reset() {
+    vertices = [];      // List of vertex definitions from OBJ
+    normals = [];       // List of normal definitions from OBJ
+    uvs = [];           // List of UV definitions from OBJ
+    faceVertices = [];  // Non-indexed final vertex definitions
+    faceNormals = [];   // Non-indexed final normal definitions
+    faceUVs = [];       // Non-indexed final UV definitions
+
+    faceVerts = []; // Indices into vertices array for this face
+    faceNorms = []; // Indices into normal array for this face
+    faceTexs = []; // Indices into UVs array for this face
+}
+
+
+
+
+
 
 /**
  * Parses the vertex, normal, texture, face, and material information from an OBJ file
@@ -72,7 +100,7 @@ function parseObjFile(objFile) {
         return line.trim();
     });
 
-    let notFirstMaterial = false;
+
     //TODO: On each material change (currMaterial), and at end of file, render according to material that is in currMaterial.
     for (let currLine = 0; currLine < objLines.length; currLine++) {
 
@@ -92,18 +120,13 @@ function parseObjFile(objFile) {
         }
         else if (line.startsWith("usemtl")) { // Material use definition
 
+            render();
+            faceVertices = [];  // Non-indexed final vertex definitions
+            faceNormals = [];   // Non-indexed final normal definitions
+            faceUVs = [];       // Non-indexed final UV definitions
             currMaterial = line.substr(line.indexOf(' ') + 1);
-            // if(currMaterial == "TailLights"){
-            //     render();
-            // }
-            // if (notFirstMaterial) {
-            //     render();
-                render();
-                faceVertices = [];  // Non-indexed final vertex definitions
-                faceNormals = [];   // Non-indexed final normal definitions
-                faceUVs = [];       // Non-indexed final UV definitions
-            // }
-            // notFirstMaterial = true;
+
+
         }
         else if (line.charAt(0) === 'f') {
             parseFaces(line);
@@ -122,9 +145,9 @@ function parseObjFile(objFile) {
 
     }
 
+    render();
+    reset();
 
-
-    //render();
 }
 
 
@@ -206,6 +229,7 @@ function parseMtlFile(mtlFile) {
         }
         else if (line.startsWith("map_Kd")) { // Material diffuse texture definition
             textureURL = "https://web.cs.wpi.edu/~jmcuneo/cs4731/project3/" + line.substr(line.indexOf(' ') + 1);
+            console.log(textureURL);
         }
     }
 }
