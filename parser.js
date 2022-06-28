@@ -72,7 +72,7 @@ function parseObjFile(objFile) {
         return line.trim();
     });
 
-
+    let notFirstMaterial = false;
     //TODO: On each material change (currMaterial), and at end of file, render according to material that is in currMaterial.
     for (let currLine = 0; currLine < objLines.length; currLine++) {
 
@@ -91,7 +91,19 @@ function parseObjFile(objFile) {
             vertices.push(vec4(coords[0], coords[1], coords[2], 1.0));
         }
         else if (line.startsWith("usemtl")) { // Material use definition
+
             currMaterial = line.substr(line.indexOf(' ') + 1);
+            // if(currMaterial == "TailLights"){
+            //     render();
+            // }
+            // if (notFirstMaterial) {
+            //     render();
+                render();
+                faceVertices = [];  // Non-indexed final vertex definitions
+                faceNormals = [];   // Non-indexed final normal definitions
+                faceUVs = [];       // Non-indexed final UV definitions
+            // }
+            // notFirstMaterial = true;
         }
         else if (line.charAt(0) === 'f') {
             parseFaces(line);
@@ -112,7 +124,7 @@ function parseObjFile(objFile) {
 
 
 
-    render();
+    //render();
 }
 
 

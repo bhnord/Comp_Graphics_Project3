@@ -11,7 +11,7 @@ let vNormal;
 let FOV_Y = 10;
 const Z_DISTANCE = 10.0;
 
-let lightPosition = vec4(0.0, 0.0, -Z_DISTANCE+7, 0.0);
+let lightPosition = vec4(0.0, 0.0, -Z_DISTANCE+7.0, 0.0);
 let lightAmbient = vec4(0.2, 0.2, 0.2, 1.0);
 let lightDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
 let lightSpecular = vec4(1.0, 1.0, 1.0, 1.0);
@@ -42,6 +42,7 @@ function main() {
         return;
     }
 
+    
     // Set viewport
     gl.viewport(0, 0, canvas.width, canvas.height);
 
@@ -52,8 +53,10 @@ function main() {
     program = initShaders(gl, "vshader", "fshader");
     gl.useProgram(program);
 
-    gl.enable(gl.CULL_FACE);
-    gl.cullFace(gl.BACK);
+
+    gl.enable(gl.DEPTH_TEST);
+    // gl.enable(gl.CULL_FACE);
+    // gl.cullFace(gl.BACK);
 
     //buffer creations and vertex array initialization
     vBuffer = gl.createBuffer();
@@ -79,13 +82,15 @@ function main() {
     let up = vec3(0.0, 1.0, 0.0);
 
 
-    let eye = vec3(0, 0, Z_DISTANCE);
+    let eye = vec3(0, 0, Z_DISTANCE*4);
     let modelViewMatrix = lookAt(eye, at, up);
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
     
     let projectionMatrix = perspective(FOV_Y, canvas.width / canvas.height,.1, 100);
     let projectionMatrixLoc = gl.getUniformLocation(program, "projectionMatrix");
+
+    //TODO: Change back
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
     // transMatrixLoc = gl.getUniformLocation(program, "transMatrix");
 
@@ -117,14 +122,15 @@ function main() {
     //     loadFile(base_url+elem, elem.slice(-3));
     // }
     console.log("ddd");
-    loadFiles(base_url+files[0]);
+
+    loadFiles(base_url+files[2]);
 }
 
 
 function render(){
-    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+    //gl.clearColor(1.0, 1.0, 1.0, 1.0);
 
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    //gl.clear(gl.COLOR_BUFFER_BIT);
 
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
@@ -137,6 +143,10 @@ function render(){
     let diffuseProduct = mult(lightDiffuse, diffuseMap.get(currMaterial));
     let specularProduct = mult(lightSpecular, specularMap.get(currMaterial));
     let ambientProduct = lightAmbient;
+    // let diffuseProduct = mult(lightDiffuse, materialDiffuse);
+    // let specularProduct = mult(lightSpecular, materialSpecular);
+    // let ambientProduct = mult(lightAmbient, materialAmbient);
+
     let transMatrix = translate(0,0,0);
 
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "transMatrix"), false, flatten(transMatrix));

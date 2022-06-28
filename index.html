@@ -40,7 +40,8 @@
                 vec4 diffuse = diffuseProduct * dot(L, N); 
                 vec4 ambient = ambientProduct; 
                 vec4 specular = specularProduct * pow(max(dot(V, R), 0.0), shininess); 
-                vec4 fColor = diffuse + specular + ambient;
+                vec4 fColor = diffuse + specular + ambient; 
+
                 fColor.a = 1.0; 
                 
                 gl_FragColor = fColor; 
