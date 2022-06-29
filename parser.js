@@ -17,10 +17,10 @@ let diffuseMap = new Map();
 let specularMap = new Map();
 let currFile = null;
 
-let car = [];
-let lamp = [];
-let street = [];
-let bunny = [];
+let draw_all = []; //stores all objects, face verts, and norms along with their respective mat keys.
+
+
+
 //save verticies in tuples with verts, mat key
 /**
  * Loads a text file into the local program from a URL.
@@ -29,6 +29,7 @@ let bunny = [];
  * @param fileType The type (OBJ or MTL) of the file being loaded.
  */
 function loadFiles(base_url, fileName) {
+    currFile = fileName;
     let fileURL = base_url + fileName;
     // Asynchronously load file
     let objReq = new XMLHttpRequest();
@@ -100,6 +101,7 @@ function parseObjFile(objFile) {
         return line.trim();
     });
 
+    let face_mat_map = [];
 
     //TODO: On each material change (currMaterial), and at end of file, render according to material that is in currMaterial.
     for (let currLine = 0; currLine < objLines.length; currLine++) {
@@ -120,10 +122,17 @@ function parseObjFile(objFile) {
         }
         else if (line.startsWith("usemtl")) { // Material use definition
 
-            render();
+            face_mat_map.push([currMaterial, faceVertices.slice(), faceNormals.slice()]);
+            console.log(currMaterial);
+            //render here?
+            //render();
+
+
             faceVertices = [];  // Non-indexed final vertex definitions
             faceNormals = [];   // Non-indexed final normal definitions
             faceUVs = [];       // Non-indexed final UV definitions
+
+
             currMaterial = line.substr(line.indexOf(' ') + 1);
 
 
@@ -144,6 +153,10 @@ function parseObjFile(objFile) {
         faceTexs = []; // Indices into UVs array for this face
 
     }
+
+    face_mat_map.push([currMaterial, faceVertices.slice(), faceNormals.slice()]);
+    console.log(draw_all.length);
+    draw_all.push([currFile, face_mat_map.slice()]);
 
     render();
     reset();
