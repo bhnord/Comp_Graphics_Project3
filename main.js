@@ -65,8 +65,8 @@ function main() {
 
 
     gl.enable(gl.DEPTH_TEST);
-    // gl.enable(gl.CULL_FACE);
-    // gl.cullFace(gl.BACK);
+    gl.enable(gl.CULL_FACE);
+    gl.cullFace(gl.BACK);
 
     //buffer creations and vertex array initialization
     vBuffer = gl.createBuffer();
@@ -239,6 +239,8 @@ function full_render() {
     let modelViewMatrix = lookAt(eye, at, up);
     //modelViewMatrix = mult(rotate(camera_rotation, vec3(0, 1, 0)), modelViewMatrix);
 
+
+    modelViewMatrix = mult(translate(2.85, -1, .85), rotateY(180)); //drivers window lock
     hierarchy(modelViewMatrix, hierarchy_tree.root);
     if (rotating || animation_on)
         requestAnimationFrame(full_render);
