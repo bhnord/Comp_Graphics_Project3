@@ -22,7 +22,7 @@ let materialSpecular = vec4(1.0, 1.0, 1.0, 1.0);
 let materialShininess = 20.0;
 
 
-
+let modelViewMatrixLoc = null;
 
 /**
  * Sets up WebGL and enables the features this program requires.
@@ -78,16 +78,23 @@ function main() {
 
 
     //setup texture
-    var vTexCoord = gl.getAttribLocation(program, "vTexCoord");
-    gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vTexCoord);
+    // var vTexCoord = gl.getAttribLocation(program, "vTexCoord");
+    // gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
+    // gl.enableVertexAttribArray(vTexCoord);
 
 
     //setup projection matrix locations
 
+    modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
 
     let projectionMatrix = perspective(FOV_Y, canvas.width / canvas.height, .1, 100);
     let projectionMatrixLoc = gl.getUniformLocation(program, "projectionMatrix");
+
+
+    //configure light
+
+    gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
+    gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
 
     //TODO: Change back
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
@@ -144,104 +151,153 @@ function configureTexture(image) {
 
 
 
-let lightswitch = vec4(1.0, 1.0, 1.0, 1.0);
-let degrees = 0;
-function render() {
-    //gl.clearColor(1.0, 1.0, 1.0, 1.0);
-
-    //gl.clear(gl.COLOR_BUFFER_BIT);
-
-    let at = vec3(0.0, 0.0, 0.0);
-    let up = vec3(0.0, 1.0, 0.0);
-    let eye = vec3(0.0, 5, Z_DISTANCE);
-    if (animation_on)
-        degrees = (degrees + 0.1) % 360;
-
-    
-
-    let eyex = (eye[0]*Math.cos(degrees)) - (eye[2]*Math.sin(degrees));
-    let eyez = (-eye[0]*Math.sin(degrees)) + (eye[2]*Math.cos(degrees));
-    eye = vec3(eyex, eye[1], eyez);
-    console.log(eye);
-    //eye = Math.multiply(rotate(degrees, vec3(0, 1, 0)), eye);
-    //gl.uniformMatrix4fv(gl.getUniformLocation(program, "rotationMatrix"), false,  flatten(rotation));
-    //setup camera rotation / position / lookat
-
-    let modelViewMatrix = lookAt(eye, at, up);
-    modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+function Tree(root) {
+    this.root = root;
+}
+function Node(object_name, faces, transform) {
+    this.object_name = object_name;
+    this.faces = faces;
+    this.transform = transform;
+    this.children = [];
+}
 
 
 
 
-    gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
-    gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
-
+let hierarchy_tree = null;
+function createTree() {
+    //bunny is childof car
+    let bunny = null; // save bunny to make child of car
+    let street = null;
+    let stop_sign = null;
+    let car = null;
+    let lamp = null;
     for (const objects of draw_all) {
         let object_name = objects[0];
-        console.log(object_name);
-        let transMatrix = translate(0.0, 0.0, 0.0);
+        let faces = objects[1];
+
 
         if (object_name == "car") {
-            transMatrix = translate(2.85, 0.0, 0.0);
+            car = new Node(object_name, faces, translate(2.85, 0.0, 0.0));
         }
-        if (object_name == "bunny") {
-            transMatrix = translate(0.0, 0.0, 3.0);
+        else if (object_name == "bunny") {
+            bunny = new Node(object_name, faces, translate(0.0, 0.0, 3.0));
         }
-        if (object_name == "stop") {
-
-            // let image = new Image();
-            // image.crossOrigin = "";
-            // image.src = textureURL;
-            // image.onload = function(){
-            //     configureTexture(image);
-            // }
-            // //console.log(faceUVs);
+        //TODO: IMPLMENT STOPSIGN
+        // else if (object_name == "stopsign") {
+        //     stop_sign = new Node(object_name, faces, translate(0.0, 0.0, 0.0));
+        //     // let image = new Image();
+        //     // image.crossOrigin = "";
+        //     // image.src = textureURL;
+        //     // image.onload = function(){
+        //     //     configureTexture(image);
+        //     // }
+        //     // //console.log(faceUVs);
+        // }
+        else if (object_name == "street") {
+            street = new Node(object_name, faces, translate(0.0, 0.0, 0.0))
         }
-
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "transMatrix"), false, flatten(transMatrix));
-
-        let faces = objects[1];
-        for (const section of faces) { //for each mat, face tuple
-            let mat = section[0];
-            let verts = section[1];
-            let norms = section[2];
-            //console.log(mat);
-            gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, flatten(verts), gl.STATIC_DRAW);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, vNormal);
-            gl.bufferData(gl.ARRAY_BUFFER, flatten(norms), gl.STATIC_DRAW);
-
-
-            // console.log(mat);
-            // console.log(verts);
-            // console.log(norms);
-            let diffuseProduct = mult(lightswitch, mult(lightDiffuse, diffuseMap.get(mat)));
-            let specularProduct = mult(lightswitch, mult(lightSpecular, specularMap.get(mat)));
-            let ambientProduct = mult(lightAmbient, diffuseMap.get(mat));
-
-            //set uniform material properties 
-            gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
-            gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
-            gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
-
-
-            gl.drawArrays(gl.TRIANGLES, 0, verts.length);
+        else if (object_name == "lamp"){
+            lamp = new Node(object_name, faces, translate(0.0, 0.0, 0.0));
         }
     }
 
 
-
-
-
-    if (animation_on) {
-        requestAnimationFrame(render);
+    //TODO: IMPLEMENT STOPSIGN
+    if (car !== null && street !== null && bunny !== null && lamp !== null){// && stop_sign !== null) {
+        car.children.push(bunny);
+        street.children.push(car, lamp);//, stop_sign);
+        hierarchy_tree = new Tree(street);
+        full_render();
     }
 
 }
 
-let animation_on = false;
+function full_render() {
+    //setup camera rotation / position / lookat
+    let at = vec3(0.0, 0.0, 0.0);
+    let up = vec3(0.0, 1.0, 0.0);
+    let eye = vec3(0.0, 5, Z_DISTANCE);
+    if (rotating)
+        camera_rotation = (camera_rotation + 0.1) % 360;
+
+
+    let eyex = (eye[0] * Math.cos(camera_rotation)) - (eye[2] * Math.sin(camera_rotation));
+    let eyez = (-eye[0] * Math.sin(camera_rotation)) + (eye[2] * Math.cos(camera_rotation));
+    eye = vec3(eyex, eye[1], eyez);
+    let modelViewMatrix = lookAt(eye, at, up);
+
+
+    hierarchy(modelViewMatrix, hierarchy_tree.root);
+    if (rotating)
+        requestAnimationFrame(full_render);
+}
+
+
+let stack = [];
+function hierarchy(mvMatrix, thisNode) {
+    console.log("hierarchy");
+    console.log(thisNode);
+    stack.push(mvMatrix);
+    mvMatrix = mult(mvMatrix, thisNode.transform);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(mvMatrix));
+    render(thisNode.faces);
+    for (let i = 0; i < thisNode.children.length; i++) {
+        hierarchy(mvMatrix, thisNode.children[i]);
+    }
+    mvMatrix = stack.pop();
+}
+
+let lightswitch = vec4(1.0, 1.0, 1.0, 1.0);
+let camera_rotation = 0;
+let car_rotation = 0;
+let animation_on = false; 
+
+
+function render(faces) {
+
+    console.log(faces);
+
+
+    // gl.uniformMatrix4fv(gl.getUniformLocation(program, "transMatrix"), false, flatten(transMatrix));
+
+
+    for (const section of faces) { //for each mat, face tuple
+        let mat = section[0];
+        let verts = section[1];
+        let norms = section[2];
+        //console.log(mat);
+        gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(verts), gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, vNormal);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(norms), gl.STATIC_DRAW);
+
+
+        // console.log(mat);
+        // console.log(verts);
+        // console.log(norms);
+        let diffuseProduct = mult(lightswitch, mult(lightDiffuse, diffuseMap.get(mat)));
+        let specularProduct = mult(lightswitch, mult(lightSpecular, specularMap.get(mat)));
+        let ambientProduct = mult(lightAmbient, diffuseMap.get(mat));
+
+        //set uniform material properties 
+        gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
+        gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
+        gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
+
+
+        gl.drawArrays(gl.TRIANGLES, 0, verts.length);
+    }
+}
+
+
+
+
+
+
+
+let rotating = false;
 
 
 window.onkeypress = (event) => {
@@ -251,13 +307,13 @@ window.onkeypress = (event) => {
             let light = (lightswitch[0] + 1.0) % 2.0;
             lightswitch = vec4(light, light, light, 1.0);
             console.log(lightswitch);
-            if (!animation_on)
-                render();
+            if (!rotating)
+                full_render();
             break;
         case 'c':
 
-            animation_on = !animation_on;
-            if (animation_on)
-                render();
+            rotating = !rotating;
+            if (rotating)
+                full_render();
     }
 }

@@ -29,13 +29,13 @@
             void main() {
 
 
-                vec3 pos = (modelViewMatrix * transMatrix * vPosition).xyz; 
+                vec3 pos = (modelViewMatrix * vPosition).xyz; 
                 L = normalize(lightPosition.xyz - pos); 
                 N = normalize(modelViewMatrix * vNormal).xyz; 
                 V = normalize(-pos); 
 
                 //fTexCoord = vTexCoord;
-                gl_Position = projectionMatrix  * modelViewMatrix *  transMatrix * vPosition;
+                gl_Position = projectionMatrix  * modelViewMatrix *  vPosition;
             }
         </script>
 

@@ -77,6 +77,7 @@ function reset() {
     faceVerts = []; // Indices into vertices array for this face
     faceNorms = []; // Indices into normal array for this face
     faceTexs = []; // Indices into UVs array for this face
+    currMaterial = null;
 }
 
 
@@ -121,9 +122,9 @@ function parseObjFile(objFile) {
             vertices.push(vec4(coords[0], coords[1], coords[2], 1.0));
         }
         else if (line.startsWith("usemtl")) { // Material use definition
+            if (currMaterial !== null)
+                face_mat_map.push([currMaterial, faceVertices.slice(), faceNormals.slice()]);
 
-            face_mat_map.push([currMaterial, faceVertices.slice(), faceNormals.slice()]);
-            console.log(currMaterial);
             //render here?
             //render();
 
@@ -155,10 +156,10 @@ function parseObjFile(objFile) {
     }
 
     face_mat_map.push([currMaterial, faceVertices.slice(), faceNormals.slice()]);
-    console.log(draw_all.length);
+
     draw_all.push([currFile, face_mat_map.slice()]);
 
-    render();
+    createTree(); //tries to create tree(will only succeed if all objects are loaded)
     reset();
 
 }
