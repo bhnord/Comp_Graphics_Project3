@@ -4,25 +4,35 @@ let gl;
 let program;
 
 
+const FOV_Y = 50;
+const Z_DISTANCE = 9.0;
+const CAMERA_SPEED = 0.05;
+const CAR_SPEED = -10;
+
+
 
 let vBuffer;
 let vNormal;
 
-let FOV_Y = 50;
-const Z_DISTANCE = 15.0;
+
 
 let lightPosition = vec4(0.0, 2.85, -Z_DISTANCE, 0.0);
 let lightAmbient = vec4(0.1, 0.1, 0.1, 1.0);
+
 let lightDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
 let lightSpecular = vec4(1.0, 1.0, 1.0, 1.0);
 
-let materialAmbient = vec4(1.0, 0.0, 1.0, 1.0);
-let materialDiffuse = vec4(1.0, 0.8, 0.0, 1.0);
-let materialSpecular = vec4(1.0, 1.0, 1.0, 1.0);
-let materialShininess = 20.0;
+
+let materialShininess = 10.0;
 
 
 let modelViewMatrixLoc = null;
+
+
+let lightswitch = vec4(1.0, 1.0, 1.0, 1.0);
+let camera_rotation = 0;
+let animation_on = false; // car animation
+let rotating = false;
 
 /**
  * Sets up WebGL and enables the features this program requires.
@@ -181,7 +191,7 @@ function createTree() {
             car = new Node(object_name, faces, translate(2.85, 0.0, 0.0));
         }
         else if (object_name == "bunny") {
-            bunny = new Node(object_name, faces, translate(0.0, 0.0, 3.0));
+            bunny = new Node(object_name, faces, translate(0.0, 0.70, 1.65));
         }
         //TODO: IMPLMENT STOPSIGN
         // else if (object_name == "stopsign") {
@@ -197,14 +207,14 @@ function createTree() {
         else if (object_name == "street") {
             street = new Node(object_name, faces, translate(0.0, 0.0, 0.0))
         }
-        else if (object_name == "lamp"){
+        else if (object_name == "lamp") {
             lamp = new Node(object_name, faces, translate(0.0, 0.0, 0.0));
         }
     }
 
 
     //TODO: IMPLEMENT STOPSIGN
-    if (car !== null && street !== null && bunny !== null && lamp !== null){// && stop_sign !== null) {
+    if (car !== null && street !== null && bunny !== null && lamp !== null) {// && stop_sign !== null) {
         car.children.push(bunny);
         street.children.push(car, lamp);//, stop_sign);
         hierarchy_tree = new Tree(street);
@@ -213,31 +223,36 @@ function createTree() {
 
 }
 
+
 function full_render() {
     //setup camera rotation / position / lookat
     let at = vec3(0.0, 0.0, 0.0);
     let up = vec3(0.0, 1.0, 0.0);
-    let eye = vec3(0.0, 5, Z_DISTANCE);
+    let eye = vec3(0.0, 4, Z_DISTANCE);
     if (rotating)
-        camera_rotation = (camera_rotation + 0.1) % 360;
+        camera_rotation = (camera_rotation + CAMERA_SPEED) % 360;
 
 
     let eyex = (eye[0] * Math.cos(camera_rotation)) - (eye[2] * Math.sin(camera_rotation));
     let eyez = (-eye[0] * Math.sin(camera_rotation)) + (eye[2] * Math.cos(camera_rotation));
-    eye = vec3(eyex, eye[1], eyez);
+    eye = vec3(eyex, eye[1]+Math.sin(2*camera_rotation), eyez);
     let modelViewMatrix = lookAt(eye, at, up);
-
+    //modelViewMatrix = mult(rotate(camera_rotation, vec3(0, 1, 0)), modelViewMatrix);
 
     hierarchy(modelViewMatrix, hierarchy_tree.root);
-    if (rotating)
+    if (rotating || animation_on)
         requestAnimationFrame(full_render);
 }
 
 
 let stack = [];
 function hierarchy(mvMatrix, thisNode) {
-    console.log("hierarchy");
-    console.log(thisNode);
+    if (thisNode.object_name == "car") {
+        console.log("gg");
+        if (animation_on) {
+            thisNode.transform = mult(rotate(CAR_SPEED, vec3(0, 1, 0)), thisNode.transform);
+        }
+    }
     stack.push(mvMatrix);
     mvMatrix = mult(mvMatrix, thisNode.transform);
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(mvMatrix));
@@ -245,23 +260,13 @@ function hierarchy(mvMatrix, thisNode) {
     for (let i = 0; i < thisNode.children.length; i++) {
         hierarchy(mvMatrix, thisNode.children[i]);
     }
-    mvMatrix = stack.pop();
+    stack.pop();
 }
 
-let lightswitch = vec4(1.0, 1.0, 1.0, 1.0);
-let camera_rotation = 0;
-let car_rotation = 0;
-let animation_on = false; 
+
 
 
 function render(faces) {
-
-    console.log(faces);
-
-
-    // gl.uniformMatrix4fv(gl.getUniformLocation(program, "transMatrix"), false, flatten(transMatrix));
-
-
     for (const section of faces) { //for each mat, face tuple
         let mat = section[0];
         let verts = section[1];
@@ -273,10 +278,6 @@ function render(faces) {
         gl.bindBuffer(gl.ARRAY_BUFFER, vNormal);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(norms), gl.STATIC_DRAW);
 
-
-        // console.log(mat);
-        // console.log(verts);
-        // console.log(norms);
         let diffuseProduct = mult(lightswitch, mult(lightDiffuse, diffuseMap.get(mat)));
         let specularProduct = mult(lightswitch, mult(lightSpecular, specularMap.get(mat)));
         let ambientProduct = mult(lightAmbient, diffuseMap.get(mat));
@@ -286,8 +287,11 @@ function render(faces) {
         gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
         gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
 
-
         gl.drawArrays(gl.TRIANGLES, 0, verts.length);
+
+
+        // let modelMatrix = translate(lightPosition[0], lightPosition[1], lightPosition[3])
+
     }
 }
 
@@ -297,7 +301,7 @@ function render(faces) {
 
 
 
-let rotating = false;
+
 
 
 window.onkeypress = (event) => {
@@ -307,13 +311,18 @@ window.onkeypress = (event) => {
             let light = (lightswitch[0] + 1.0) % 2.0;
             lightswitch = vec4(light, light, light, 1.0);
             console.log(lightswitch);
-            if (!rotating)
+            if (!rotating && !animation_on)
                 full_render();
             break;
         case 'c':
-
             rotating = !rotating;
-            if (rotating)
+            if (rotating && ! animation_on)
                 full_render();
+            break;
+        case 'm':
+            animation_on = !animation_on;
+            if (animation_on && !rotating)
+                full_render();
+            break;
     }
 }

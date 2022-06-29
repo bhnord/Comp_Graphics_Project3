@@ -14,14 +14,13 @@
 
             //lighting setup
             uniform vec4 lightPosition; 
-            uniform mat4 transMatrix;
-            uniform mat4 rotationMatrix;
+
 
             varying vec3 L, N, V; 
 
 
 
-            attribute  vec2 vTexCoord;
+            //attribute vec2 vTexCoord;
 
             //texture setup
             varying vec4 fColor;
@@ -59,6 +58,8 @@
 
                 fColor.a = 1.0; 
                 
+
+                //find depth d from light source to pixel
                 gl_FragColor = fColor; 
                // gl_FragColor = texture2D( texture, fTexCoord );
             }
