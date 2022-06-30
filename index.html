@@ -49,6 +49,9 @@
             //texture
             varying  vec2 fTexCoord;
             uniform sampler2D texture;
+
+            uniform int isStop;
+            
             void main() {
                 vec3 R = (2.0 * dot(L, N) * N) - L; 
                 vec4 diffuse = diffuseProduct * dot(L, N); 

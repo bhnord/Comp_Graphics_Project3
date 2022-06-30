@@ -16,7 +16,7 @@ let vNormal;
 
 
 
-let lightPosition = vec4(0.0, 3.85, -Z_DISTANCE);
+let lightPosition = vec4(0.0, 3.85, -Z_DISTANCE); //TODO: -Z distance
 let lightAmbient = vec4(0.1, 0.1, 0.1, 1.0);
 
 let lightDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
@@ -138,12 +138,13 @@ function main() {
     m = mat4();
     m[3][3] = 0;
     m[3][1] = -1 / (lightPosition[1]);
+    
 
-
+    gl.uniform1i(gl.getUniformLocation(program, "isStop"), 0);
     //loadFiles(base_url, files[0]);
     for (let i = 0; i < files.length; i++) {
-        if (i != 3)
-            loadFiles(base_url, files[i]);
+        //if (i != 3)
+        loadFiles(base_url, files[i]);
     }
 
 }
@@ -197,16 +198,16 @@ function createTree() {
             bunny = new Node(object_name, faces, translate(0.0, 0.70, 1.65));
         }
         //TODO: IMPLMENT STOPSIGN
-        // else if (object_name == "stopsign") {
-        //     stop_sign = new Node(object_name, faces, translate(0.0, 0.0, 0.0));
-        //     // let image = new Image();
-        //     // image.crossOrigin = "";
-        //     // image.src = textureURL;
-        //     // image.onload = function(){
-        //     //     configureTexture(image);
-        //     // }
-        //     // //console.log(faceUVs);
-        // }
+        else if (object_name == "stopsign") {
+            stop_sign = new Node(object_name, faces, mult(translate(4.25, 0.0, 0.0), rotateY(-90)));
+            //     // let image = new Image();
+            //     // image.crossOrigin = "";
+            //     // image.src = textureURL;
+            //     // image.onload = function(){
+            //     //     configureTexture(image);
+            //     // }
+            //     // //console.log(faceUVs);
+        }
         else if (object_name == "street") {
             street = new Node(object_name, faces, translate(0.0, 0.0, 0.0))
         }
@@ -217,20 +218,37 @@ function createTree() {
 
 
     //TODO: IMPLEMENT STOPSIGN
-    if (car !== null && street !== null && bunny !== null && lamp !== null) {// && stop_sign !== null) {
+    if (car !== null && street !== null && bunny !== null && lamp !== null && stop_sign !== null) {
         car.children.push(bunny);
-        street.children.push(car, lamp);//, stop_sign);
+        street.children.push(car, lamp, stop_sign);
 
 
         hierarchy_tree = new Tree(street);
         carNode = car;
 
         console.log(car.transform);
-        let car_shadow_matrix = translate(car.transform[0][3], -lightPosition[1], 0);//-lightPosition[2]);
 
+
+
+        //since these will be nested under "car" and "stop sign" to move with them, the light position will be in a coordinate system 
+        //centered at the object. we need to move our "lightPosition" into this coordinate system by applying the matrix transforms
+        //so we can get a projection of shadow.
+        let light = mult(mult(inverse4(car.transform),translate(0,0,Z_DISTANCE)), lightPosition);
+        let car_shadow_matrix = translate(-light[0], -light[1], -light[2]);
         car_shadow_matrix = mult(m, car_shadow_matrix);
-        car_shadow_matrix = mult(translate(-car.transform[0][3], lightPosition[1], 0), car_shadow_matrix);
+        car_shadow_matrix = mult(translate(light[0], light[1], light[2]), car_shadow_matrix);
 
+
+        light = mult(mult(inverse4(stop_sign.transform),translate(0,0,Z_DISTANCE)), lightPosition);
+        //light = mult(translate(0,0,Z_DISTANCE),mult(inverse4(stop_sign.transform), lightPosition));
+        // let stop_shadow_matrix = translate(stop_sign.transform[0][3], -lightPosition[1], stop_sign.transform[2][3]);
+        // stop_shadow_matrix = mult(m, stop_shadow_matrix);
+        // stop_shadow_matrix = mult(translate(-stop_sign.transform[0][3], lightPosition[1], -stop_sign.transform[2][3]), stop_shadow_matrix);
+
+
+        let stop_shadow_matrix = translate(-light[0], -light[1], -light[2]);
+        stop_shadow_matrix = mult(m, stop_shadow_matrix);
+        stop_shadow_matrix = mult(translate(light[0], light[1], light[2]), stop_shadow_matrix);
 
         let shadow_faces = car.faces.map(function (arr) {
             return arr.slice();
@@ -239,14 +257,32 @@ function createTree() {
             //shadow_faces.push("shadow",faces[1], faces)
             shadow_faces[i][0] = "shadow";
         }
+        let shadow_faces2 = stop_sign.faces.map(function (arr) {
+            return arr.slice();
+        });
+        for (let i = 0; i < shadow_faces2.length; i++) {
+            //shadow_faces.push("shadow",faces[1], faces)
+            shadow_faces2[i][0] = "shadow";
+        }
+
         diffuseMap.set("shadow", [0, 0, 0, 1.0]);
         specularMap.set("shadow", [0, 0, 0, 1.0]);
 
 
 
-
         let car_shadow = new Node("car_shadow", shadow_faces, car_shadow_matrix);//mult(matrix, car.transform));
         car.children.push(car_shadow);
+
+        let stop_shadow = new Node("stop_shadow", shadow_faces2, stop_shadow_matrix);
+        stop_sign.children.push(stop_shadow);
+
+
+
+ 
+
+        //TODO: REMOVE
+        street.faces = lamp.faces;
+        //  car.transform = mult(car.transform, rotateY(90)); 
         full_render();
     }
 
@@ -306,14 +342,34 @@ function hierarchy(mvMatrix, thisNode) {
 
     stack.push(mvMatrix);
     if (thisNode.object_name.includes("shadow")) {
-        if (!shadow_on || lightswitch[0] ==0) {
+        if (!shadow_on || lightswitch[0] == 0) {
+            console.log("shadow");
             stack.pop();
             return;
+        } else {
+            // let light = mult(mult(inverse4(stack[1]), inverse4(mvMatrix)), lightPosition);
+            // let car_shadow_matrix = translate(-light[0], -light[1], -light[2]);
+            // car_shadow_matrix = mult(m, car_shadow_matrix);
+            // car_shadow_matrix = mult(translate(light[0], light[1], light[2]), car_shadow_matrix);
+
+            // thisNode.transform = car_shadow_matrix;
+            mvMatrix = mult(mvMatrix, thisNode.transform);
+            //console.log("shadow");
         }
-    }
-    mvMatrix = mult(mvMatrix, thisNode.transform);
+    } else
+        mvMatrix = mult(mvMatrix, thisNode.transform);
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(mvMatrix));
-    render(thisNode.faces);
+
+    if (thisNode.object_name == "stopsign") {
+        console.log(thisNode.faces);
+        gl.uniform1i(gl.getUniformLocation(program, "isStop"), 1);
+        render(thisNode.faces);
+        gl.uniform1i(gl.getUniformLocation(program, "isStop"), 0);
+    } else {
+        render(thisNode.faces);
+    }
+
+
     for (let i = 0; i < thisNode.children.length; i++) {
         hierarchy(mvMatrix, thisNode.children[i]);
     }
