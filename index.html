@@ -6,7 +6,7 @@
     <title>CS 4731 Final Project</title>
     <script id="vshader" type="x-shader/x-vertex">
 
-        
+            precision highp int;
             attribute vec4 vPosition; 
             attribute vec4 vNormal;
             uniform mat4 projectionMatrix; 
@@ -26,13 +26,17 @@
             attribute vec2 vTexCoord;
             varying vec4 fColor;
             varying vec2 fTexCoord;
+            uniform int isBox; 
+         
             void main() {
 
-
-                vec3 pos = (modelViewMatrix * vPosition).xyz; 
-                L = normalize(lightPosition.xyz - pos); 
-                N = normalize(modelViewMatrix * vNormal).xyz; 
-                V = normalize(-pos); 
+                if(isBox <1){
+                    vec3 pos = (modelViewMatrix * vPosition).xyz; 
+                    L = normalize(lightPosition.xyz - pos); 
+                    N = normalize(modelViewMatrix * vNormal).xyz; 
+                    V = normalize(-pos); 
+                }
+ 
 
                 fTexCoord = vTexCoord;
                 gl_Position = projectionMatrix  * modelViewMatrix *  vPosition;
@@ -41,7 +45,7 @@
 
     <script id="fshader" type="x-shader/x-fragment">
             precision mediump float; 
-
+            precision highp int;
 
             varying vec3 L, N, V; 
             uniform vec4 ambientProduct, diffuseProduct, specularProduct; 
@@ -51,9 +55,13 @@
             varying  vec2 fTexCoord;
             uniform sampler2D texture;
 
-            uniform int isStop; //(is stopsign)
 
+            uniform int isStop; //(is stopsign)
+            uniform int isBox; 
             void main() {
+                if(isBox ==1){
+                    gl_FragColor = texture2D(texture, fTexCoord);
+                } else {
                 vec3 R = (2.0 * dot(L, N) * N) - L; 
                 vec4 diffuse = diffuseProduct * dot(L, N); 
                 vec4 ambient = ambientProduct; 
@@ -69,6 +77,7 @@
                 if(isStop == 1){
                     gl_FragColor = texture2D(texture, fTexCoord )*fColor;
                 }
+            }
                
             }
         </script>

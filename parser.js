@@ -83,7 +83,7 @@ function reset() {
 
 
 let stopTexture = [];
-
+let stopImage;
 
 /**
  * Parses the vertex, normal, texture, face, and material information from an OBJ file
@@ -158,11 +158,11 @@ function parseObjFile(objFile) {
 
     if (currFile == "stopsign") {
         stopTexture = [currMaterial, faceVertices.slice(), faceUVs.slice(), faceNormals.slice()];
-        let image = new Image();
-        image.crossOrigin = "";
-        image.src = textureURL;
-        image.onload = function () {
-            configureTexture(image);
+        stopImage = new Image();
+        stopImage.crossOrigin = "";
+        stopImage.src = textureURL;
+        stopImage.onload = function () {
+     
             createTree();
         }
     } else {

@@ -15,6 +15,11 @@ let vBuffer;
 let vNormal;
 let tBuffer;
 
+let texture_vertices;
+let texCoord;
+let minT = 0;
+let maxT =1;
+let images = [];
 
 
 let lightPosition = vec4(0.0, 3.85, -Z_DISTANCE); //TODO: -Z distance
@@ -72,7 +77,7 @@ function main() {
     //buffer creations and vertex array initialization
     vBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
-    //gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+    //gl.bufferData(gl.ARRAY_BUFFER, flatten(texture_vertices), gl.STATIC_DRAW);
 
     let vPosition = gl.getAttribLocation(program, "vPosition");
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
@@ -117,15 +122,74 @@ function main() {
     //TODO: Change back
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
 
-    // 'skybox_negx.png',
+    gl.uniform1i(gl.getUniformLocation(program, "isBox"), 0);
+
+    let box = [ 'skybox_posz.png',
+    'skybox_posx.png',
+    'skybox_negy.png',
+    'skybox_posy.png',
+    'skybox_negz.png',
+    'skybox_negx.png'];
+
+    images = [null, null, null, null, null, null];
+    for(let i=0; i< box.length; i++){
+        let image = new Image();
+        image.crossOrigin = "";
+        image.src = "https://web.cs.wpi.edu/~jmcuneo/cs4731/project3/"+box[i];
+        image.onload = function () {
+            images[i] = image;
+            tryStartParsing();
+        }
+    }
+
+    
+    //let img1 = 
+        // 'skybox_negx.png',
     // 'skybox_negy.png',
     // 'skybox_negz.png',
     // 'skybox_posx.png',
     // 'skybox_posy.png',
     // 'skybox_posz.png',
+
     // 'stop.png',
     // 'stop_alt.png',
 
+    texture_vertices = [
+        vec4( -size, -size,  size, 1.0 ),
+        vec4( -size,  size,  size, 1.0 ),
+        vec4( size,  size,  size, 1.0 ),
+        vec4( size, -size,  size, 1.0 ),
+        vec4( -size, -size, -size, 1.0 ),
+        vec4( -size,  size, -size, 1.0 ),
+        vec4( size,  size, -size, 1.0 ),
+        vec4( size, -size, -size, 1.0 )
+    ];
+    texCoord = [
+        vec2(minT, minT),
+        vec2(minT, maxT),
+        vec2(maxT, maxT),
+        vec2(maxT, minT)
+    ];
+
+    m = mat4();
+    m[3][3] = 0;
+    m[3][1] = -1 / (lightPosition[1]);
+
+
+    gl.uniform1i(gl.getUniformLocation(program, "isStop"), 0);
+
+
+
+
+
+}
+
+function tryStartParsing(){
+    for(let i = 0; i < images.length; i++){
+        if(images[i] == null){
+            return;
+        }
+    }
 
     let base_url = 'https://web.cs.wpi.edu/~jmcuneo/cs4731/project3_1/';
     let files = [
@@ -135,26 +199,16 @@ function main() {
         'stopsign',
         'street'
     ];
-
-
-
     // note: street_alt is for part 2
 
     //ONLY PASS IN OBJ, AND LOOKS FOR MTL OF SAME NAME. -- CAN FORCE SYNC ON OBJ AND MTL LOADED
 
 
-    m = mat4();
-    m[3][3] = 0;
-    m[3][1] = -1 / (lightPosition[1]);
-
-
-    gl.uniform1i(gl.getUniformLocation(program, "isStop"), 0);
     //loadFiles(base_url, files[0]);
     for (let i = 0; i < files.length; i++) {
         //if (i != 3)
         loadFiles(base_url, files[i]);
     }
-
 }
 
 function configureTexture(image) {
@@ -170,7 +224,8 @@ function configureTexture(image) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
+    
+ 
     gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
 }
 
@@ -337,14 +392,13 @@ let first_person = false;
 let stack = [];
 function hierarchy(mvMatrix, thisNode) {
     if (thisNode.object_name == "car") {
-
         if (animation_on) {
             thisNode.transform = mult(rotate(CAR_SPEED, vec3(0, 1, 0)), thisNode.transform);
-
-            // if (first_person)
-            //     hierarchy_tree.root.transform = inverse4(mult(carNode.transform, mult(translate(0, 1, 1), rotateY(180))));
-            //hierarchy_tree.root.transform = mult(inverse4(hierarchy_tree.root.transform),inverse4(carNode.transform));
         }
+    }
+
+    if(thisNode.object_name == "street"){
+        drawBoxes();
     }
 
     stack.push(mvMatrix);
@@ -383,12 +437,89 @@ function hierarchy(mvMatrix, thisNode) {
     stack.pop();
 }
 
+let size = 20;
+let pointsArray =[];
+let texCoordsArray =[];
+function drawBoxes(){
+    console.log("box");
+    // cube();
+    gl.uniform1i(gl.getUniformLocation(program, "isBox"), 1);
+    
+
+
+    let cubeNums = [[ 1, 0, 3, 2 ],
+    [2, 3, 7, 6 ],
+    [3, 0, 4, 7 ],
+    [6, 5, 1, 2 ],
+    [4, 5, 6, 7 ],
+    [5, 4, 0, 1 ]];
+
+    for (let i = 0; i < 6; i++){
+        pointsArray = [];
+        texCoordsArray = [];
+        configureTexture(images[i]);
+
+        quad(cubeNums[i]);
+        gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArray), gl.STATIC_DRAW);
+    
+        gl.bindBuffer(gl.ARRAY_BUFFER, tBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(texCoordsArray), gl.STATIC_DRAW);
+    
+        gl.bindBuffer(gl.ARRAY_BUFFER, vNormal);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArray), gl.STATIC_DRAW);
+
+        gl.drawArrays(gl.TRIANGLES, 0, pointsArray.length);
+    }
+    gl.uniform1i(gl.getUniformLocation(program, "isBox"), 0);
+}
+// function cube(){
+//     quad( 1, 0, 3, 2 );
+//     quad( 2, 3, 7, 6 );
+//     quad( 3, 0, 4, 7 );
+//     quad( 6, 5, 1, 2 );
+//     quad( 4, 5, 6, 7 );
+//     quad( 5, 4, 0, 1 );
+// }
+function quad(arr) {
+    let a = arr[0]; //1
+    let b = arr[1];//0
+    let c = arr[2];//3
+    let d = arr[3];//2
+    pointsArray.push(texture_vertices[c]);
+    texCoordsArray.push(texCoord[2]);
+
+    pointsArray.push(texture_vertices[b]);
+    texCoordsArray.push(texCoord[1]);
+
+    pointsArray.push(texture_vertices[a]);
+    texCoordsArray.push(texCoord[0]);
+
+
+
+ 
+
+    pointsArray.push(texture_vertices[d]);
+    texCoordsArray.push(texCoord[3]);
+    
+    pointsArray.push(texture_vertices[c]);
+    texCoordsArray.push(texCoord[2]);
+
+    pointsArray.push(texture_vertices[a]);
+    texCoordsArray.push(texCoord[0]);
+
+ 
+
+}
+
+
 let shadow_on = false;
 
 function renderTexture(tex){
+    configureTexture(stopImage);
+
     let mat = tex[0];
 
-    console.log(tex);
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(tex[1]), gl.STATIC_DRAW);
 
@@ -470,6 +601,8 @@ window.onkeypress = (event) => {
             if (animation_on && !rotating)
                 full_render();
             break;
+
+
         case 'd':
 
             first_person = !first_person;
