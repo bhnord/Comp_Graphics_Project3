@@ -350,10 +350,7 @@ function createTree() {
 
 
         light = mult(mult(inverse4(stop_sign.transform), translate(0, 0, Z_DISTANCE)), lightPosition);
-        //light = mult(translate(0,0,Z_DISTANCE),mult(inverse4(stop_sign.transform), lightPosition));
-        // let stop_shadow_matrix = translate(stop_sign.transform[0][3], -lightPosition[1], stop_sign.transform[2][3]);
-        // stop_shadow_matrix = mult(m, stop_shadow_matrix);
-        // stop_shadow_matrix = mult(translate(-stop_sign.transform[0][3], lightPosition[1], -stop_sign.transform[2][3]), stop_shadow_matrix);
+
 
 
         let stop_shadow_matrix = translate(-light[0], -light[1], -light[2]);
@@ -400,6 +397,7 @@ function createTree() {
 let m = null;
 
 let carNode = null;
+
 function full_render() {
     //setup camera rotation / position / lookat
     let at = vec3(0.0, 0.0, 0.0);
@@ -422,8 +420,10 @@ function full_render() {
     let nextPos = mult(rotate(CAR_SPEED, vec3(0, 1, 0)), carNode.transform);
 
     if (first_person) {
+        //reverse the effects of the camera and "nest" under car 
         if (animation_on) {
             hierarchy_tree.root.transform = inverse4(mult(nextPos, mult(translate(0, 1, .5), rotateY(180))));
+            
         }
         else {
             hierarchy_tree.root.transform = inverse4(mult(carNode.transform, mult(translate(0, 1, .5), rotateY(180))));
@@ -475,6 +475,7 @@ function hierarchy(mvMatrix, thisNode) {
     } else
         mvMatrix = mult(mvMatrix, thisNode.transform);
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(mvMatrix));
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "mvInverse"), false, flatten(inverse4(carNode.transform)));
 
     if (thisNode.object_name == "stopsign") {
 
@@ -668,10 +669,7 @@ window.onkeypress = (event) => {
             if (animation_on && !rotating)
                 full_render();
             break;
-
-
         case 'd':
-
             first_person = !first_person;
             rotating = false;
             if (!rotating && !animation_on)

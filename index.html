@@ -13,15 +13,12 @@
             attribute vec4 vNormal;
             uniform mat4 projectionMatrix; 
             uniform mat4 modelViewMatrix;
-
+            uniform mat4 mvInverse;
             //lighting setup
             uniform vec4 lightPosition; 
 
 
             varying vec3 L, N, V; 
-
-
-
 
 
             //texture setup
@@ -39,20 +36,26 @@
 
 
                     vec3 pos = (modelViewMatrix * vPosition).xyz; 
-                    L = normalize(lightPosition.xyz - pos); 
+                    L = normalize((lightPosition).xyz - pos); 
                     N = normalize(modelViewMatrix * vNormal).xyz; 
                     V = normalize(-pos); 
 
                     //Environment map reflection if reflection
-                    if(isReflecting == 1)
-                        refl = reflect(pos, N);
-                    if(isRefracting ==1)
-                        refr = refract(pos, N, 0.83);
+                    if(isReflecting == 1){
+                        vec3 t = normalize(mvInverse* vNormal).xyz; 
+                        refl = reflect(pos,t);
+                    }
+                    
+                    if(isRefracting ==1){
+                        vec3 t = normalize(mvInverse* vNormal).xyz; 
+                        refr = refract(pos, t, 0.83);
+                    }
  
 
                 
 
                 fTexCoord = vTexCoord;
+
                 gl_Position = projectionMatrix  * modelViewMatrix *  vPosition;
             }
         </script>
