@@ -1,3 +1,5 @@
+
+
 // WebGL globals
 let canvas;
 let gl;
@@ -177,7 +179,7 @@ function main() {
 
 
     gl.uniform1i(gl.getUniformLocation(program, "isStop"), 0);
-
+    gl.uniform1i(gl.getUniformLocation(program, "isReflecting"), 0);
 
 
 
@@ -190,7 +192,8 @@ function tryStartParsing() {
             return;
         }
     }
-
+    
+    configureCubeMap();
     let base_url = 'https://web.cs.wpi.edu/~jmcuneo/cs4731/project3_1/';
     let files = [
         'bunny',
@@ -212,10 +215,10 @@ function tryStartParsing() {
 }
 
 let cubeMap;
-function configureCubeMap(image){
+function configureCubeMap(){
     cubeMap = gl.createTexture();
 
-    gl.activeTexture(gl.TEXTURE0);
+    gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
 
 
@@ -223,21 +226,37 @@ function configureCubeMap(image){
 
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
+    /*'skybox_posz.png',
+        'skybox_posx.png',
+        'skybox_negy.png',
+        'skybox_posy.png',
+        'skybox_negz.png',
+        'skybox_negx.png'*/
     //MAP IMAGES HERE
 
-    gl.texImage2D(gl.TEXTURE_CUBE_MAP, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[0]);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[1]);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[2]);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[3]);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[4]);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[5]);
+
+   // gl.texImage2D(gl.TEXTURE_CUBE_MAP, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 
-    gl.uniform1i(gl.getUniformLocation(program, "texMap"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "texMap"), 1);
 }
 
 
 function configureTexture(image) {
     let tex = gl.createTexture();
+    
+    gl.activeTexture(gl.TEXTURE0);
+    
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 
@@ -460,7 +479,12 @@ function hierarchy(mvMatrix, thisNode) {
         gl.uniform1i(gl.getUniformLocation(program, "isStop"), 1);
         renderTexture(stopTexture);
         gl.uniform1i(gl.getUniformLocation(program, "isStop"), 0);
-    } else {
+    } else if(thisNode.object_name == "car"){
+        gl.uniform1i(gl.getUniformLocation(program, "isReflecting"), 1);
+        render(thisNode.faces);
+        gl.uniform1i(gl.getUniformLocation(program, "isReflecting"), 0);
+    } 
+    else {
         render(thisNode.faces);
     }
     if (thisNode.object_name == "street") {
