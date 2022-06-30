@@ -16,7 +16,7 @@ let vNormal;
 
 
 
-let lightPosition = vec4(0.0, 2.85, -Z_DISTANCE, 0.0);
+let lightPosition = vec4(0.0, 3.85, -Z_DISTANCE);
 let lightAmbient = vec4(0.1, 0.1, 0.1, 1.0);
 
 let lightDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
@@ -129,12 +129,15 @@ function main() {
     ];
 
 
-    //TODO: Parse files
+
     // note: street_alt is for part 2
 
     //ONLY PASS IN OBJ, AND LOOKS FOR MTL OF SAME NAME. -- CAN FORCE SYNC ON OBJ AND MTL LOADED
 
 
+    m = mat4();
+    m[3][3] = 0;
+    m[3][1] = -1 / (lightPosition[1]);
 
 
     //loadFiles(base_url, files[0]);
@@ -217,13 +220,41 @@ function createTree() {
     if (car !== null && street !== null && bunny !== null && lamp !== null) {// && stop_sign !== null) {
         car.children.push(bunny);
         street.children.push(car, lamp);//, stop_sign);
+
+
         hierarchy_tree = new Tree(street);
+        carNode = car;
+
+        console.log(car.transform);
+        let car_shadow_matrix = translate(car.transform[0][3], -lightPosition[1], 0);//-lightPosition[2]);
+
+        car_shadow_matrix = mult(m, car_shadow_matrix);
+        car_shadow_matrix = mult(translate(-car.transform[0][3], lightPosition[1], 0), car_shadow_matrix);
+
+
+        let shadow_faces = car.faces.map(function (arr) {
+            return arr.slice();
+        });
+        for (let i = 0; i < shadow_faces.length; i++) {
+            //shadow_faces.push("shadow",faces[1], faces)
+            shadow_faces[i][0] = "shadow";
+        }
+        diffuseMap.set("shadow", [0, 0, 0, 1.0]);
+        specularMap.set("shadow", [0, 0, 0, 1.0]);
+
+
+
+
+        let car_shadow = new Node("car_shadow", shadow_faces, car_shadow_matrix);//mult(matrix, car.transform));
+        car.children.push(car_shadow);
         full_render();
     }
 
 }
 
+let m = null;
 
+let carNode = null;
 function full_render() {
     //setup camera rotation / position / lookat
     let at = vec3(0.0, 0.0, 0.0);
@@ -235,27 +266,51 @@ function full_render() {
 
     let eyex = (eye[0] * Math.cos(camera_rotation)) - (eye[2] * Math.sin(camera_rotation));
     let eyez = (-eye[0] * Math.sin(camera_rotation)) + (eye[2] * Math.cos(camera_rotation));
-    eye = vec3(eyex, eye[1]+Math.sin(2*camera_rotation), eyez);
+    eye = vec3(eyex, eye[1] + Math.sin(2 * camera_rotation), eyez);
     let modelViewMatrix = lookAt(eye, at, up);
     //modelViewMatrix = mult(rotate(camera_rotation, vec3(0, 1, 0)), modelViewMatrix);
 
+    //modelViewMatrix = mult(mult(translate(0, -1, 0.85), carNode.transform), rotateY(180));
+    //modelViewMatrix = mult(translate(2.85, -1, .85), rotateY(180)); //drivers window lock
+    let nextPos = mult(rotate(CAR_SPEED, vec3(0, 1, 0)), carNode.transform);
+    console.log(first_person);
+    if (first_person) {
+        if (animation_on)
+            hierarchy_tree.root.transform = inverse4(mult(nextPos, mult(translate(0, 1, .5), rotateY(180))));
+        else
+            hierarchy_tree.root.transform = inverse4(mult(carNode.transform, mult(translate(0, 1, .5), rotateY(180))));
+    }
+    else
+        hierarchy_tree.root.transform = modelViewMatrix;
 
-    modelViewMatrix = mult(translate(2.85, -1, .85), rotateY(180)); //drivers window lock
+
+    modelViewMatrix = translate(0, 0, 0);
     hierarchy(modelViewMatrix, hierarchy_tree.root);
     if (rotating || animation_on)
         requestAnimationFrame(full_render);
 }
 
-
+let first_person = false;
 let stack = [];
 function hierarchy(mvMatrix, thisNode) {
     if (thisNode.object_name == "car") {
         console.log("gg");
         if (animation_on) {
             thisNode.transform = mult(rotate(CAR_SPEED, vec3(0, 1, 0)), thisNode.transform);
+
+            // if (first_person)
+            //     hierarchy_tree.root.transform = inverse4(mult(carNode.transform, mult(translate(0, 1, 1), rotateY(180))));
+            //hierarchy_tree.root.transform = mult(inverse4(hierarchy_tree.root.transform),inverse4(carNode.transform));
         }
     }
+
     stack.push(mvMatrix);
+    if (thisNode.object_name.includes("shadow")) {
+        if (!shadow_on || lightswitch[0] ==0) {
+            stack.pop();
+            return;
+        }
+    }
     mvMatrix = mult(mvMatrix, thisNode.transform);
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(mvMatrix));
     render(thisNode.faces);
@@ -265,7 +320,7 @@ function hierarchy(mvMatrix, thisNode) {
     stack.pop();
 }
 
-
+let shadow_on = false;
 
 
 function render(faces) {
@@ -318,12 +373,24 @@ window.onkeypress = (event) => {
             break;
         case 'c':
             rotating = !rotating;
-            if (rotating && ! animation_on)
+            if (rotating && !animation_on)
                 full_render();
             break;
         case 'm':
             animation_on = !animation_on;
             if (animation_on && !rotating)
+                full_render();
+            break;
+        case 'd':
+            console.log("d");
+            first_person = !first_person;
+            rotating = false;
+            if (!rotating && !animation_on)
+                full_render();
+            break;
+        case 's':
+            shadow_on = !shadow_on;
+            if (!rotating && !animation_on)
                 full_render();
             break;
     }
