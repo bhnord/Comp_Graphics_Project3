@@ -34,7 +34,7 @@ function loadFiles(base_url, fileName) {
     // Asynchronously load file
     let objReq = new XMLHttpRequest();
     objReq.open('GET', fileURL + ".mtl");
-    console.log(fileName);
+
 
     //get OBJ file
     objReq.onreadystatechange = function () {
@@ -82,7 +82,7 @@ function reset() {
 
 
 
-
+let stopTexture = [];
 
 
 /**
@@ -122,21 +122,16 @@ function parseObjFile(objFile) {
             vertices.push(vec4(coords[0], coords[1], coords[2], 1.0));
         }
         else if (line.startsWith("usemtl")) { // Material use definition
+
             if (currMaterial !== null)
                 face_mat_map.push([currMaterial, faceVertices.slice(), faceNormals.slice()]);
 
-            //render here?
-            //render();
-
-
-            faceVertices = [];  // Non-indexed final vertex definitions
-            faceNormals = [];   // Non-indexed final normal definitions
-            faceUVs = [];       // Non-indexed final UV definitions
 
 
             currMaterial = line.substr(line.indexOf(' ') + 1);
-
-
+            faceVertices = [];  // Non-indexed final vertex definitions
+            faceNormals = [];   // Non-indexed final normal definitions
+            faceUVs = [];       // Non-indexed final UV definitions
         }
         else if (line.charAt(0) === 'f') {
             parseFaces(line);
@@ -159,7 +154,20 @@ function parseObjFile(objFile) {
 
     draw_all.push([currFile, face_mat_map.slice()]);
 
-    createTree(); //tries to create tree(will only succeed if all objects are loaded)
+
+
+    if (currFile == "stopsign") {
+        stopTexture = [currMaterial, faceVertices.slice(), faceUVs.slice(), faceNormals.slice()];
+        let image = new Image();
+        image.crossOrigin = "";
+        image.src = textureURL;
+        image.onload = function () {
+            configureTexture(image);
+            createTree();
+        }
+    } else {
+        createTree(); //tries to create tree(will only succeed if all objects are loaded)
+    }
     reset();
 
 }

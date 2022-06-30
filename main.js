@@ -13,6 +13,7 @@ const CAR_SPEED = -10;
 
 let vBuffer;
 let vNormal;
+let tBuffer;
 
 
 
@@ -86,6 +87,13 @@ function main() {
     gl.vertexAttribPointer(vNormalPosition, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vNormalPosition);
 
+    tBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, tBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten([]), gl.STATIC_DRAW);
+
+    let vTexCoord = gl.getAttribLocation(program, "vTexCoord");
+    gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vTexCoord);
 
     //setup texture
     // var vTexCoord = gl.getAttribLocation(program, "vTexCoord");
@@ -138,7 +146,7 @@ function main() {
     m = mat4();
     m[3][3] = 0;
     m[3][1] = -1 / (lightPosition[1]);
-    
+
 
     gl.uniform1i(gl.getUniformLocation(program, "isStop"), 0);
     //loadFiles(base_url, files[0]);
@@ -150,16 +158,19 @@ function main() {
 }
 
 function configureTexture(image) {
-    var tex = gl.createTexture();
+    let tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
     gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
 }
 
@@ -199,14 +210,11 @@ function createTree() {
         }
         //TODO: IMPLMENT STOPSIGN
         else if (object_name == "stopsign") {
-            stop_sign = new Node(object_name, faces, mult(translate(4.25, 0.0, 0.0), rotateY(-90)));
-            //     // let image = new Image();
-            //     // image.crossOrigin = "";
-            //     // image.src = textureURL;
-            //     // image.onload = function(){
-            //     //     configureTexture(image);
-            //     // }
-            //     // //console.log(faceUVs);
+            stop_sign = new Node(object_name, faces, mult(translate(-4.25, 0.0, -2.0), rotateY(-90)));
+
+
+
+
         }
         else if (object_name == "street") {
             street = new Node(object_name, faces, translate(0.0, 0.0, 0.0))
@@ -226,20 +234,20 @@ function createTree() {
         hierarchy_tree = new Tree(street);
         carNode = car;
 
-        console.log(car.transform);
+
 
 
 
         //since these will be nested under "car" and "stop sign" to move with them, the light position will be in a coordinate system 
         //centered at the object. we need to move our "lightPosition" into this coordinate system by applying the matrix transforms
         //so we can get a projection of shadow.
-        let light = mult(mult(inverse4(car.transform),translate(0,0,Z_DISTANCE)), lightPosition);
+        let light = mult(mult(inverse4(car.transform), translate(0, 0, Z_DISTANCE)), lightPosition);
         let car_shadow_matrix = translate(-light[0], -light[1], -light[2]);
         car_shadow_matrix = mult(m, car_shadow_matrix);
         car_shadow_matrix = mult(translate(light[0], light[1], light[2]), car_shadow_matrix);
 
 
-        light = mult(mult(inverse4(stop_sign.transform),translate(0,0,Z_DISTANCE)), lightPosition);
+        light = mult(mult(inverse4(stop_sign.transform), translate(0, 0, Z_DISTANCE)), lightPosition);
         //light = mult(translate(0,0,Z_DISTANCE),mult(inverse4(stop_sign.transform), lightPosition));
         // let stop_shadow_matrix = translate(stop_sign.transform[0][3], -lightPosition[1], stop_sign.transform[2][3]);
         // stop_shadow_matrix = mult(m, stop_shadow_matrix);
@@ -278,11 +286,10 @@ function createTree() {
 
 
 
- 
+
 
         //TODO: REMOVE
-        street.faces = lamp.faces;
-        //  car.transform = mult(car.transform, rotateY(90)); 
+        //street.faces = lamp.faces;
         full_render();
     }
 
@@ -309,7 +316,7 @@ function full_render() {
     //modelViewMatrix = mult(mult(translate(0, -1, 0.85), carNode.transform), rotateY(180));
     //modelViewMatrix = mult(translate(2.85, -1, .85), rotateY(180)); //drivers window lock
     let nextPos = mult(rotate(CAR_SPEED, vec3(0, 1, 0)), carNode.transform);
-    console.log(first_person);
+
     if (first_person) {
         if (animation_on)
             hierarchy_tree.root.transform = inverse4(mult(nextPos, mult(translate(0, 1, .5), rotateY(180))));
@@ -330,7 +337,7 @@ let first_person = false;
 let stack = [];
 function hierarchy(mvMatrix, thisNode) {
     if (thisNode.object_name == "car") {
-        console.log("gg");
+
         if (animation_on) {
             thisNode.transform = mult(rotate(CAR_SPEED, vec3(0, 1, 0)), thisNode.transform);
 
@@ -343,7 +350,7 @@ function hierarchy(mvMatrix, thisNode) {
     stack.push(mvMatrix);
     if (thisNode.object_name.includes("shadow")) {
         if (!shadow_on || lightswitch[0] == 0) {
-            console.log("shadow");
+
             stack.pop();
             return;
         } else {
@@ -354,16 +361,16 @@ function hierarchy(mvMatrix, thisNode) {
 
             // thisNode.transform = car_shadow_matrix;
             mvMatrix = mult(mvMatrix, thisNode.transform);
-            //console.log("shadow");
+
         }
     } else
         mvMatrix = mult(mvMatrix, thisNode.transform);
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(mvMatrix));
 
     if (thisNode.object_name == "stopsign") {
-        console.log(thisNode.faces);
+
         gl.uniform1i(gl.getUniformLocation(program, "isStop"), 1);
-        render(thisNode.faces);
+        renderTexture(stopTexture);
         gl.uniform1i(gl.getUniformLocation(program, "isStop"), 0);
     } else {
         render(thisNode.faces);
@@ -378,13 +385,39 @@ function hierarchy(mvMatrix, thisNode) {
 
 let shadow_on = false;
 
+function renderTexture(tex){
+    let mat = tex[0];
+
+    console.log(tex);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(tex[1]), gl.STATIC_DRAW);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, tBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(tex[2]), gl.STATIC_DRAW);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vNormal);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(tex[3]), gl.STATIC_DRAW);
+    
+
+    let diffuseProduct = mult(lightswitch, mult(lightDiffuse, diffuseMap.get(mat)));
+    let specularProduct = mult(lightswitch, mult(lightSpecular, specularMap.get(mat)));
+    let ambientProduct = mult(lightAmbient, diffuseMap.get(mat));
+
+    //set uniform material properties 
+    gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
+
+    gl.drawArrays(gl.TRIANGLES, 0, tex[1].length);
+}
+
 
 function render(faces) {
     for (const section of faces) { //for each mat, face tuple
         let mat = section[0];
         let verts = section[1];
         let norms = section[2];
-        //console.log(mat);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(verts), gl.STATIC_DRAW);
 
@@ -423,7 +456,7 @@ window.onkeypress = (event) => {
         case 'l':
             let light = (lightswitch[0] + 1.0) % 2.0;
             lightswitch = vec4(light, light, light, 1.0);
-            console.log(lightswitch);
+
             if (!rotating && !animation_on)
                 full_render();
             break;
@@ -438,7 +471,7 @@ window.onkeypress = (event) => {
                 full_render();
             break;
         case 'd':
-            console.log("d");
+
             first_person = !first_person;
             rotating = false;
             if (!rotating && !animation_on)
