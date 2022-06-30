@@ -211,12 +211,38 @@ function tryStartParsing() {
     }
 }
 
+let cubeMap;
+function configureCubeMap(image){
+    cubeMap = gl.createTexture();
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
+
+
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    //MAP IMAGES HERE
+
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+
+    gl.uniform1i(gl.getUniformLocation(program, "texMap"), 0);
+}
+
+
 function configureTexture(image) {
     let tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
 
 
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
@@ -370,19 +396,31 @@ function full_render() {
 
     //modelViewMatrix = mult(mult(translate(0, -1, 0.85), carNode.transform), rotateY(180));
     //modelViewMatrix = mult(translate(2.85, -1, .85), rotateY(180)); //drivers window lock
+
+
     let nextPos = mult(rotate(CAR_SPEED, vec3(0, 1, 0)), carNode.transform);
 
     if (first_person) {
-        if (animation_on)
+        if (animation_on){
             hierarchy_tree.root.transform = inverse4(mult(nextPos, mult(translate(0, 1, .5), rotateY(180))));
-        else
+        }
+        else{
             hierarchy_tree.root.transform = inverse4(mult(carNode.transform, mult(translate(0, 1, .5), rotateY(180))));
+            //lightPosition = mult(hierarchy_tree.root.transform, lightPosition);
+        }
+        //let lightPosition = vec4(0.0, 3.85, -Z_DISTANCE);
+
+        //shifts light over to correct position now that coordinate system centered at car.
+        gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(vec4(2.85,3.85,0)));
+        console.log(lightPosition);
     }
-    else
+    else{
+        gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
         hierarchy_tree.root.transform = modelViewMatrix;
+    }
 
 
-    modelViewMatrix = translate(0, 0, 0);
+    modelViewMatrix = translate(0,0,0);
     hierarchy(modelViewMatrix, hierarchy_tree.root);
     if (rotating || animation_on)
         requestAnimationFrame(full_render);
@@ -395,11 +433,6 @@ function hierarchy(mvMatrix, thisNode) {
         if (animation_on) {
             thisNode.transform = mult(rotate(CAR_SPEED, vec3(0, 1, 0)), thisNode.transform);
         }
-    }
-
-    if (thisNode.object_name == "street") {
-        if (skybox)
-            drawBoxes();
     }
 
     stack.push(mvMatrix);
@@ -430,7 +463,10 @@ function hierarchy(mvMatrix, thisNode) {
     } else {
         render(thisNode.faces);
     }
-
+    if (thisNode.object_name == "street") {
+        if (skybox)
+            drawBoxes();
+    }
 
     for (let i = 0; i < thisNode.children.length; i++) {
         hierarchy(mvMatrix, thisNode.children[i]);
