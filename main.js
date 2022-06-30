@@ -18,7 +18,7 @@ let tBuffer;
 let texture_vertices;
 let texCoord;
 let minT = 0;
-let maxT =1;
+let maxT = 1;
 let images = [];
 
 
@@ -124,27 +124,27 @@ function main() {
 
     gl.uniform1i(gl.getUniformLocation(program, "isBox"), 0);
 
-    let box = [ 'skybox_posz.png',
-    'skybox_posx.png',
-    'skybox_negy.png',
-    'skybox_posy.png',
-    'skybox_negz.png',
-    'skybox_negx.png'];
+    let box = ['skybox_posz.png',
+        'skybox_posx.png',
+        'skybox_negy.png',
+        'skybox_posy.png',
+        'skybox_negz.png',
+        'skybox_negx.png'];
 
     images = [null, null, null, null, null, null];
-    for(let i=0; i< box.length; i++){
+    for (let i = 0; i < box.length; i++) {
         let image = new Image();
         image.crossOrigin = "";
-        image.src = "https://web.cs.wpi.edu/~jmcuneo/cs4731/project3/"+box[i];
+        image.src = "https://web.cs.wpi.edu/~jmcuneo/cs4731/project3/" + box[i];
         image.onload = function () {
             images[i] = image;
             tryStartParsing();
         }
     }
 
-    
+
     //let img1 = 
-        // 'skybox_negx.png',
+    // 'skybox_negx.png',
     // 'skybox_negy.png',
     // 'skybox_negz.png',
     // 'skybox_posx.png',
@@ -155,14 +155,14 @@ function main() {
     // 'stop_alt.png',
 
     texture_vertices = [
-        vec4( -size, -size,  size, 1.0 ),
-        vec4( -size,  size,  size, 1.0 ),
-        vec4( size,  size,  size, 1.0 ),
-        vec4( size, -size,  size, 1.0 ),
-        vec4( -size, -size, -size, 1.0 ),
-        vec4( -size,  size, -size, 1.0 ),
-        vec4( size,  size, -size, 1.0 ),
-        vec4( size, -size, -size, 1.0 )
+        vec4(-size, -size, size, 1.0),
+        vec4(-size, size, size, 1.0),
+        vec4(size, size, size, 1.0),
+        vec4(size, -size, size, 1.0),
+        vec4(-size, -size, -size, 1.0),
+        vec4(-size, size, -size, 1.0),
+        vec4(size, size, -size, 1.0),
+        vec4(size, -size, -size, 1.0)
     ];
     texCoord = [
         vec2(minT, minT),
@@ -184,9 +184,9 @@ function main() {
 
 }
 
-function tryStartParsing(){
-    for(let i = 0; i < images.length; i++){
-        if(images[i] == null){
+function tryStartParsing() {
+    for (let i = 0; i < images.length; i++) {
+        if (images[i] == null) {
             return;
         }
     }
@@ -224,8 +224,8 @@ function configureTexture(image) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    
- 
+
+
     gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
 }
 
@@ -397,8 +397,9 @@ function hierarchy(mvMatrix, thisNode) {
         }
     }
 
-    if(thisNode.object_name == "street"){
-        drawBoxes();
+    if (thisNode.object_name == "street") {
+        if (skybox)
+            drawBoxes();
     }
 
     stack.push(mvMatrix);
@@ -438,23 +439,23 @@ function hierarchy(mvMatrix, thisNode) {
 }
 
 let size = 20;
-let pointsArray =[];
-let texCoordsArray =[];
-function drawBoxes(){
+let pointsArray = [];
+let texCoordsArray = [];
+function drawBoxes() {
     console.log("box");
     // cube();
     gl.uniform1i(gl.getUniformLocation(program, "isBox"), 1);
-    
 
 
-    let cubeNums = [[ 1, 0, 3, 2 ],
-    [2, 3, 7, 6 ],
-    [3, 0, 4, 7 ],
-    [6, 5, 1, 2 ],
-    [4, 5, 6, 7 ],
-    [5, 4, 0, 1 ]];
 
-    for (let i = 0; i < 6; i++){
+    let cubeNums = [[1, 0, 3, 2],
+    [2, 3, 7, 6],
+    [3, 0, 4, 7],
+    [6, 5, 1, 2],
+    [4, 5, 6, 7],
+    [5, 4, 0, 1]];
+
+    for (let i = 0; i < 6; i++) {
         pointsArray = [];
         texCoordsArray = [];
         configureTexture(images[i]);
@@ -462,10 +463,10 @@ function drawBoxes(){
         quad(cubeNums[i]);
         gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArray), gl.STATIC_DRAW);
-    
+
         gl.bindBuffer(gl.ARRAY_BUFFER, tBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(texCoordsArray), gl.STATIC_DRAW);
-    
+
         gl.bindBuffer(gl.ARRAY_BUFFER, vNormal);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArray), gl.STATIC_DRAW);
 
@@ -497,25 +498,25 @@ function quad(arr) {
 
 
 
- 
+
 
     pointsArray.push(texture_vertices[d]);
     texCoordsArray.push(texCoord[3]);
-    
+
     pointsArray.push(texture_vertices[c]);
     texCoordsArray.push(texCoord[2]);
 
     pointsArray.push(texture_vertices[a]);
     texCoordsArray.push(texCoord[0]);
 
- 
+
 
 }
 
 
 let shadow_on = false;
 
-function renderTexture(tex){
+function renderTexture(tex) {
     configureTexture(stopImage);
 
     let mat = tex[0];
@@ -528,7 +529,7 @@ function renderTexture(tex){
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vNormal);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(tex[3]), gl.STATIC_DRAW);
-    
+
 
     let diffuseProduct = mult(lightswitch, mult(lightDiffuse, diffuseMap.get(mat)));
     let specularProduct = mult(lightswitch, mult(lightSpecular, specularMap.get(mat)));
@@ -575,8 +576,7 @@ function render(faces) {
 
 
 
-
-
+let skybox = true;
 
 
 
@@ -612,6 +612,11 @@ window.onkeypress = (event) => {
             break;
         case 's':
             shadow_on = !shadow_on;
+            if (!rotating && !animation_on)
+                full_render();
+            break;
+        case 'e':
+            skybox = !skybox;
             if (!rotating && !animation_on)
                 full_render();
             break;
