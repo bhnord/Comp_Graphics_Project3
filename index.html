@@ -30,7 +30,11 @@
             varying vec2 fTexCoord;
             uniform int isBox; 
          
+
+            uniform int isReflecting;
+            uniform int isRefracting;
             varying vec3 refl;
+            varying vec3 refr;
             void main() {
 
 
@@ -40,8 +44,10 @@
                     V = normalize(-pos); 
 
                     //Environment map reflection if reflection
-                    refl = reflect(pos, N);
-             
+                    if(isReflecting == 1)
+                        refl = reflect(pos, N);
+                    if(isRefracting ==1)
+                        refr = refract(pos, N, 0.83);
  
 
                 
@@ -64,10 +70,12 @@
             uniform sampler2D texture;
             uniform samplerCube texMap;
             varying vec3 refl;
+            varying vec3 refr;
 
             uniform int isStop; //(is stopsign)
             uniform int isBox; 
             uniform int isReflecting;
+            uniform int isRefracting;
             void main() {
                 if(isBox ==1){
                     gl_FragColor = texture2D(texture, fTexCoord);
@@ -89,6 +97,8 @@
                     
                     if(isReflecting == 1)
                         gl_FragColor = textureCube(texMap, refl)*fColor;
+                    if(isRefracting ==1)
+                        gl_FragColor = textureCube(texMap, refr);
                 }
                
             }

@@ -180,6 +180,7 @@ function main() {
 
     gl.uniform1i(gl.getUniformLocation(program, "isStop"), 0);
     gl.uniform1i(gl.getUniformLocation(program, "isReflecting"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isRefracting"), 0);
 
 
 
@@ -192,7 +193,7 @@ function tryStartParsing() {
             return;
         }
     }
-    
+
     configureCubeMap();
     let base_url = 'https://web.cs.wpi.edu/~jmcuneo/cs4731/project3_1/';
     let files = [
@@ -215,7 +216,7 @@ function tryStartParsing() {
 }
 
 let cubeMap;
-function configureCubeMap(){
+function configureCubeMap() {
     cubeMap = gl.createTexture();
 
     gl.activeTexture(gl.TEXTURE1);
@@ -241,7 +242,7 @@ function configureCubeMap(){
     gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[4]);
     gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[5]);
 
-   // gl.texImage2D(gl.TEXTURE_CUBE_MAP, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    // gl.texImage2D(gl.TEXTURE_CUBE_MAP, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
@@ -254,9 +255,9 @@ function configureCubeMap(){
 
 function configureTexture(image) {
     let tex = gl.createTexture();
-    
+
     gl.activeTexture(gl.TEXTURE0);
-    
+
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 
@@ -285,6 +286,7 @@ function Node(object_name, faces, transform) {
     this.transform = transform;
     this.children = [];
 }
+
 
 
 
@@ -420,26 +422,26 @@ function full_render() {
     let nextPos = mult(rotate(CAR_SPEED, vec3(0, 1, 0)), carNode.transform);
 
     if (first_person) {
-        if (animation_on){
+        if (animation_on) {
             hierarchy_tree.root.transform = inverse4(mult(nextPos, mult(translate(0, 1, .5), rotateY(180))));
         }
-        else{
+        else {
             hierarchy_tree.root.transform = inverse4(mult(carNode.transform, mult(translate(0, 1, .5), rotateY(180))));
             //lightPosition = mult(hierarchy_tree.root.transform, lightPosition);
         }
         //let lightPosition = vec4(0.0, 3.85, -Z_DISTANCE);
 
         //shifts light over to correct position now that coordinate system centered at car.
-        gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(vec4(2.85,3.85,0)));
+        gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(vec4(2.85, 3.85, 0)));
         console.log(lightPosition);
     }
-    else{
+    else {
         gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
         hierarchy_tree.root.transform = modelViewMatrix;
     }
 
 
-    modelViewMatrix = translate(0,0,0);
+    modelViewMatrix = translate(0, 0, 0);
     hierarchy(modelViewMatrix, hierarchy_tree.root);
     if (rotating || animation_on)
         requestAnimationFrame(full_render);
@@ -479,11 +481,15 @@ function hierarchy(mvMatrix, thisNode) {
         gl.uniform1i(gl.getUniformLocation(program, "isStop"), 1);
         renderTexture(stopTexture);
         gl.uniform1i(gl.getUniformLocation(program, "isStop"), 0);
-    } else if(thisNode.object_name == "car"){
+    } else if (thisNode.object_name == "car" && reflecting) {
         gl.uniform1i(gl.getUniformLocation(program, "isReflecting"), 1);
         render(thisNode.faces);
         gl.uniform1i(gl.getUniformLocation(program, "isReflecting"), 0);
-    } 
+    } else if (thisNode.object_name == "bunny" && refracting) {
+        gl.uniform1i(gl.getUniformLocation(program, "isRefracting"), 1);
+        render(thisNode.faces);
+        gl.uniform1i(gl.getUniformLocation(program, "isRefracting"), 0);
+    }
     else {
         render(thisNode.faces);
     }
@@ -497,7 +503,8 @@ function hierarchy(mvMatrix, thisNode) {
     }
     stack.pop();
 }
-
+let reflecting = false;
+let refracting = false;
 let size = 20;
 let pointsArray = [];
 let texCoordsArray = [];
@@ -677,6 +684,16 @@ window.onkeypress = (event) => {
             break;
         case 'e':
             skybox = !skybox;
+            if (!rotating && !animation_on)
+                full_render();
+            break;
+        case 'r':
+            reflecting = !reflecting;
+            if (!rotating && !animation_on)
+                full_render();
+            break;
+        case 'f':
+            refracting = !refracting;
             if (!rotating && !animation_on)
                 full_render();
             break;
