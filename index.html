@@ -97,7 +97,6 @@
 
                     if(isStop == 1)
                         gl_FragColor = texture2D(texture, fTexCoord )*fColor;
-                    
                     if(isReflecting == 1)
                         gl_FragColor = textureCube(texMap, refl)*fColor;
                     if(isRefracting ==1)

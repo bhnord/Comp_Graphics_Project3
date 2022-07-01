@@ -24,7 +24,7 @@ let maxT = 1;
 let images = [];
 
 
-let lightPosition = vec4(0.0, 3.85, -Z_DISTANCE); //TODO: -Z distance
+let lightPosition = vec4(0.0, 3.85, -Z_DISTANCE);
 let lightAmbient = vec4(0.1, 0.1, 0.1, 1.0);
 
 let lightDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
@@ -33,6 +33,11 @@ let lightSpecular = vec4(1.0, 1.0, 1.0, 1.0);
 
 let materialShininess = 10.0;
 
+let reflecting = false;
+let refracting = false;
+let size = 20;
+let pointsArray = [];
+let texCoordsArray = [];
 
 let modelViewMatrixLoc = null;
 
@@ -102,10 +107,7 @@ function main() {
     gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vTexCoord);
 
-    //setup texture
-    // var vTexCoord = gl.getAttribLocation(program, "vTexCoord");
-    // gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
-    // gl.enableVertexAttribArray(vTexCoord);
+    
 
 
     //setup projection matrix locations
@@ -121,7 +123,7 @@ function main() {
     gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
     gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
 
-    //TODO: Change back
+
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
 
     gl.uniform1i(gl.getUniformLocation(program, "isBox"), 0);
@@ -203,12 +205,10 @@ function tryStartParsing() {
         'stopsign',
         'street'
     ];
-    // note: street_alt is for part 2
-
-    //ONLY PASS IN OBJ, AND LOOKS FOR MTL OF SAME NAME. -- CAN FORCE SYNC ON OBJ AND MTL LOADED
 
 
-    //loadFiles(base_url, files[0]);
+
+    //
     for (let i = 0; i < files.length; i++) {
         //if (i != 3)
         loadFiles(base_url, files[i]);
@@ -310,7 +310,6 @@ function createTree() {
         else if (object_name == "bunny") {
             bunny = new Node(object_name, faces, translate(0.0, 0.70, 1.65));
         }
-        //TODO: IMPLMENT STOPSIGN
         else if (object_name == "stopsign") {
             stop_sign = new Node(object_name, faces, mult(translate(-4.25, 0.0, -2.0), rotateY(-90)));
 
@@ -327,7 +326,6 @@ function createTree() {
     }
 
 
-    //TODO: IMPLEMENT STOPSIGN
     if (car !== null && street !== null && bunny !== null && lamp !== null && stop_sign !== null) {
         car.children.push(bunny);
         street.children.push(car, lamp, stop_sign);
@@ -335,9 +333,6 @@ function createTree() {
 
         hierarchy_tree = new Tree(street);
         carNode = car;
-
-
-
 
 
         //since these will be nested under "car" and "stop sign" to move with them, the light position will be in a coordinate system 
@@ -361,14 +356,12 @@ function createTree() {
             return arr.slice();
         });
         for (let i = 0; i < shadow_faces.length; i++) {
-            //shadow_faces.push("shadow",faces[1], faces)
             shadow_faces[i][0] = "shadow";
         }
         let shadow_faces2 = stop_sign.faces.map(function (arr) {
             return arr.slice();
         });
         for (let i = 0; i < shadow_faces2.length; i++) {
-            //shadow_faces.push("shadow",faces[1], faces)
             shadow_faces2[i][0] = "shadow";
         }
 
@@ -383,12 +376,6 @@ function createTree() {
         let stop_shadow = new Node("stop_shadow", shadow_faces2, stop_shadow_matrix);
         stop_sign.children.push(stop_shadow);
 
-
-
-
-
-        //TODO: REMOVE
-        //street.faces = lamp.faces;
         full_render();
     }
 
@@ -411,11 +398,7 @@ function full_render() {
     let eyez = (-eye[0] * Math.sin(camera_rotation)) + (eye[2] * Math.cos(camera_rotation));
     eye = vec3(eyex, eye[1] + Math.sin(2 * camera_rotation), eyez);
     let modelViewMatrix = lookAt(eye, at, up);
-    //modelViewMatrix = mult(rotate(camera_rotation, vec3(0, 1, 0)), modelViewMatrix);
-
-    //modelViewMatrix = mult(mult(translate(0, -1, 0.85), carNode.transform), rotateY(180));
-    //modelViewMatrix = mult(translate(2.85, -1, .85), rotateY(180)); //drivers window lock
-
+  
 
     let nextPos = mult(rotate(CAR_SPEED, vec3(0, 1, 0)), carNode.transform);
 
@@ -433,7 +416,7 @@ function full_render() {
 
         //shifts light over to correct position now that coordinate system centered at car.
         gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(vec4(2.85, 3.85, 0)));
-        console.log(lightPosition);
+        
     }
     else {
         gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
@@ -504,18 +487,14 @@ function hierarchy(mvMatrix, thisNode) {
     }
     stack.pop();
 }
-let reflecting = false;
-let refracting = false;
-let size = 20;
-let pointsArray = [];
-let texCoordsArray = [];
+
+
+//draws box for sky
 function drawBoxes() {
-    console.log("box");
-    // cube();
     gl.uniform1i(gl.getUniformLocation(program, "isBox"), 1);
 
 
-
+    //cube face vector numbers (maps to textureVertices and texcoord)
     let cubeNums = [[1, 0, 3, 2],
     [2, 3, 7, 6],
     [3, 0, 4, 7],
@@ -542,19 +521,14 @@ function drawBoxes() {
     }
     gl.uniform1i(gl.getUniformLocation(program, "isBox"), 0);
 }
-// function cube(){
-//     quad( 1, 0, 3, 2 );
-//     quad( 2, 3, 7, 6 );
-//     quad( 3, 0, 4, 7 );
-//     quad( 6, 5, 1, 2 );
-//     quad( 4, 5, 6, 7 );
-//     quad( 5, 4, 0, 1 );
-// }
+
+
+//pushes points to array to make a face of a cube
 function quad(arr) {
-    let a = arr[0]; //1
-    let b = arr[1];//0
-    let c = arr[2];//3
-    let d = arr[3];//2
+    let a = arr[0]; 
+    let b = arr[1];
+    let c = arr[2];
+    let d = arr[3];
     pointsArray.push(texture_vertices[c]);
     texCoordsArray.push(texCoord[2]);
 
@@ -563,9 +537,6 @@ function quad(arr) {
 
     pointsArray.push(texture_vertices[a]);
     texCoordsArray.push(texCoord[0]);
-
-
-
 
 
     pointsArray.push(texture_vertices[d]);
@@ -584,6 +555,8 @@ function quad(arr) {
 
 let shadow_on = false;
 
+
+//renders object with a texture (stopsign)
 function renderTexture(tex) {
     configureTexture(stopImage);
 
@@ -612,6 +585,7 @@ function renderTexture(tex) {
 }
 
 
+//render object or object part with given materials.
 function render(faces) {
     for (const section of faces) { //for each mat, face tuple
         let mat = section[0];
@@ -636,7 +610,6 @@ function render(faces) {
         gl.drawArrays(gl.TRIANGLES, 0, verts.length);
 
 
-        // let modelMatrix = translate(lightPosition[0], lightPosition[1], lightPosition[3])
 
     }
 }
@@ -655,7 +628,6 @@ window.onkeypress = (event) => {
         case 'l':
             let light = (lightswitch[0] + 1.0) % 2.0;
             lightswitch = vec4(light, light, light, 1.0);
-
             if (!rotating && !animation_on)
                 full_render();
             break;

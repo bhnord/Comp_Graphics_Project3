@@ -104,7 +104,6 @@ function parseObjFile(objFile) {
 
     let face_mat_map = [];
 
-    //TODO: On each material change (currMaterial), and at end of file, render according to material that is in currMaterial.
     for (let currLine = 0; currLine < objLines.length; currLine++) {
 
         let line = objLines[currLine];
